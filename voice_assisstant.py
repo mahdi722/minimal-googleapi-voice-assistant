@@ -34,11 +34,29 @@ model = AutoModelForCausalLM.from_pretrained("allenai/llama")
 
 # ------------------------------ Utility Functions ------------------------------
 def speak(text):
+    """
+    Converts text to speech.
+    
+    Input:
+    - text (str): Text to be spoken.
+    
+    Output:
+    - None
+    """
     engine = pyttsx3.init()
     engine.say(text)
     engine.runAndWait()
 
 def get_audio():
+    """
+    Records audio from microphone and converts it to text.
+    
+    Input:
+    - None
+    
+    Output:
+    - str: Recognized text from audio.
+    """
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
         audio = recognizer.listen(source)
@@ -54,6 +72,15 @@ def get_audio():
 
 # ------------------------------ Google Calendar Functions ------------------------------
 def authorization_google():
+     """
+    Authorizes and builds the Google Calendar service.
+    
+    Input:
+    - None
+    
+    Output:
+    - Google Calendar service object
+    """
     creds = None
     if os.path.exists('token.pickle'):
         with open('token.pickle', 'rb') as token:
@@ -72,6 +99,16 @@ def authorization_google():
     return build('calendar', 'v3', credentials=creds)
 
 def get_event(day, service):
+    """
+    Fetches and speaks the events for a given day.
+    
+    Input:
+    - day (datetime.date): Date for which events are to be fetched.
+    - service: Google Calendar service object
+    
+    Output:
+    - None
+    """
     date = datetime.datetime.combine(day, datetime.datetime.min.time())
     end_date = datetime.datetime.combine(day, datetime.datetime.max.time())
     utc = pytz.UTC
@@ -96,6 +133,15 @@ def get_event(day, service):
 
 # ------------------------------ Date Functions ------------------------------
 def get_date(text):
+    """
+    Parses and returns the date mentioned in the input text.
+    
+    Input:
+    - text (str): Input text containing date information
+    
+    Output:
+    - datetime.date: Parsed date
+    """
     text = text.lower()
     today = datetime.date.today()
 
@@ -137,6 +183,15 @@ def get_date(text):
 
 # ------------------------------ Note Functions ------------------------------
 def note(text):
+    """
+    Saves a note with the provided text to a text file.
+    
+    Input:
+    - text (str): Text to be saved in the note
+    
+    Output:
+    - None
+    """
     date = datetime.datetime.now()
     file_name = str(date).replace(":", "-") + "-note.txt"
     with open(file_name, "w", encoding="utf-8") as f:
@@ -145,11 +200,31 @@ def note(text):
 
 # ------------------------------ Email Functions ------------------------------
 def send_email(address, message):
+     """
+    Sends an email to the specified address with the given message.
+    
+    Input:
+    - address (str): Email address of the recipient
+    - message (str): Email message content
+    
+    Output:
+    - None
+    """
     yag = yagmail.SMTP("EMAIL", password="PASSWORD")
     yag.send(to=address, subject="Python", contents=message)
 
 # ------------------------------ Excel Functions ------------------------------
 def make_excel_first(username, password):
+    """
+    Creates an Excel file with the provided username and password.
+    
+    Input:
+    - username (str): Username to be saved
+    - password (str): Password to be saved
+    
+    Output:
+    - None
+    """
     workbook = xlwt.Workbook()  
     sheet = workbook.add_sheet("Sheet Name") 
     style = xlwt.easyxf('font: bold 1') 
@@ -158,16 +233,43 @@ def make_excel_first(username, password):
     workbook.save("ADDRESS")
 
 def excel_checker():
+     """
+    Checks if the Excel file exists.
+    
+    Input:
+    - None
+    
+    Output:
+    - bool: True if file exists, False otherwise
+    """
     return os.path.isfile('ADDRESS')
 
 def read_user_passwd():
-    loc = "C:/Users/Mahdi/Desktop/env/datas.xls"
+    """
+    Reads and returns the username and password from the Excel file.
+    
+    Input:
+    - None
+    
+    Output:
+    - tuple: (username, password)
+    """
+    loc = "ADDRESS"
     wb = xlrd.open_workbook(loc)
     sheet = wb.sheet_by_index(0)
     return sheet.cell_value(0, 0), sheet.cell_value(0, 1)
 
 # ------------------------------ OpenAI Connection ------------------------------
 def call_llm(text):
+     """
+    Generates text using the LLM model from the input text.
+    
+    Input:
+    - text (str): Input text for text generation
+    
+    Output:
+    - str: Generated text
+    """
     inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
     with torch.no_grad():
         outputs = model.generate(inputs.input_ids)
@@ -176,18 +278,44 @@ def call_llm(text):
 
 # ------------------------------ Main Function ------------------------------
 def main():
+    """
+    Main function to execute the program.
+    
+    Input:
+    - None
+    
+    Output:
+    - None
+    """
     print("Start")
+    # Record audio from microphone and convert it to text
     text = get_audio()
+    
+    # Generate text response using the LLM model based on the recorded text
     llm_response = call_llm(text)
+    
+    # Speak the generated LLM response
     speak(llm_response)
     
+    # Loop through predefined web scraping phrases
     for phrase in WEBSCRAPING_STR:
+        # Check if the recorded text contains a web scraping phrase
         if phrase in text:
+            # Ask the user what product they are looking for
             speak("What product are you looking for?")
+            
+            # Record audio from microphone to capture the product name
             product = get_audio()
+            
+            # Scrape information related to the product
             scrap = webscraping.webscrape(product)
+            
+            # Generate text response using the LLM model based on the scraped information
             llm_scrap_response = call_llm(scrap)
+            
+            # Speak the generated LLM response related to the scraped information
             speak(llm_scrap_response)
+
 
 if __name__ == "__main__":
     SERVICE = authorization_google()
